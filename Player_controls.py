@@ -1,53 +1,47 @@
-from Turtle_Game_Data import Game_entities
-from Game_Turtles import player_1
+from Turtle_Game_Data import map_settings, entity, static_entity
+from Screen_Init import backround
 def press_up():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['backround']['direction'] = 'down'
-        Game_entities['backround']['down'] = True
-        player_1.setheading(90)
-        Game_entities['Sam']['direction'] = 'up'
-        Game_entities['Sam']['up']=True
+    if not map_settings['lock_map']:
+        map_settings['direction'] = 'up'
+        map_settings['up'] = True
+        entity.active_player.direction = 'up'
 def release_up():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['Sam']['up'] = False
-        Game_entities['backround']['down'] = False
+    map_settings['up'] = False
 def press_down():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['backround']['direction'] = 'up'
-        Game_entities['backround']['up'] = True
-        player_1.setheading(270)
-        Game_entities['Sam']['direction'] = 'down'
-        Game_entities['Sam']['down']=True
+    if not map_settings['lock_map']:
+        map_settings['direction'] = 'down'
+        map_settings['down'] = True
+        entity.active_player.direction = 'down'
 def release_down():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['Sam']['down'] = False
-        Game_entities['backround']['up'] = False
+    map_settings['down'] = False
 def press_left():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['backround']['direction'] = 'right'
-        Game_entities['backround']['right'] = True
-        player_1.setheading(180)
-        Game_entities['Sam']['direction'] = 'left'
-        Game_entities['Sam']['left']=True
+    if not map_settings['lock_map']:
+        map_settings['direction'] = 'left'
+        map_settings['left'] = True
+        entity.active_player.direction = 'left'
 def release_left():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['Sam']['left'] = False
-        Game_entities['backround']['right'] = False
+    map_settings['left'] = False
 def press_right():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['backround']['direction'] = 'left'
-        Game_entities['backround']['left'] = True
-        player_1.setheading(0)
-        Game_entities['Sam']['direction']='right'
-        Game_entities['Sam']['right']=True
+    if not map_settings['lock_map']:
+        map_settings['direction'] = 'right'
+        map_settings['right'] = True
+        entity.active_player.direction = 'right'
 def release_right():
-    if not Game_entities['Sam']['lock']:
-        Game_entities['Sam']['right'] = False
-        Game_entities['backround']['left'] = False
+    map_settings['right'] = False
 
-# def character_controls(turtle = 'none', entitie = 'Sam'):
-#     if (Game_entities['backround']['switch'] == False and turtle != backround) or (Game_entities['backround']['switch'] == True and turtle != player_1):
-#         if Game_entities[entitie]['direction'] == 'up' and Game_entities[entitie]['up'] == True: turtle.sety(turtle.ycor()+Game_entities[entitie]['UPS'])
-#         if Game_entities[entitie]['direction'] == 'down' and Game_entities[entitie]['down'] == True: turtle.sety(turtle.ycor()-Game_entities[entitie]['DPS'])
-#         if Game_entities[entitie]['direction'] == 'left' and Game_entities[entitie]['left'] == True: turtle.setx(turtle.xcor()-Game_entities[entitie]['LPS'])
-#         if Game_entities[entitie]['direction'] == 'right' and Game_entities[entitie]['right'] == True: turtle.setx(turtle.xcor()+Game_entities[entitie]['RPS'])
+def move_backround():
+    direction = map_settings['direction']
+    if direction == 'up' and map_settings['up'] == True: backround.sety(backround.ycor()-map_settings['UPS'])
+    if direction == 'down' and map_settings['down'] == True: backround.sety(backround.ycor()+map_settings['DPS'])
+    if direction == 'left' and map_settings['left'] == True: backround.setx(backround.xcor()+map_settings['LPS'])
+    if direction == 'right' and map_settings['right'] == True: backround.setx(backround.xcor()-map_settings['RPS'])
+    move_objects(direction)
+
+def move_objects(direction):
+    all_entitys = entity.entity_pool + static_entity.entity_pool
+    for enti in all_entitys:
+        if enti != entity.active_player:
+            if direction == 'up' and map_settings['up'] == True: enti.actor.sety(enti.actor.ycor()-map_settings['UPS'])
+            if direction == 'down' and map_settings['down'] == True: enti.actor.sety(enti.actor.ycor()+map_settings['DPS'])
+            if direction == 'left' and map_settings['left'] == True: enti.actor.setx(enti.actor.xcor()+map_settings['LPS'])
+            if direction == 'right' and map_settings['right'] == True: enti.actor.setx(enti.actor.xcor()-map_settings['RPS'])
