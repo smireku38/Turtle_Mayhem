@@ -13,7 +13,9 @@ def character_funct():
 
 def find_interactable_object():
     if word_space['Can_print'] == True:
-        for enti in entity.entity_pool:
+        all_entitys = entity.entity_pool + static_entity.entity_pool
+        for enti in all_entitys:
+            print(f"Checking {enti.name}: {enti.conversant}")
             if enti.conversant:
                 if entity.active_player.actor.distance(enti.actor) < 50:
                     return enti
@@ -52,7 +54,7 @@ def Change_active_player():
 
 def move_game():
     if Game_story['pause_Game'] == False:
-        phase1()
+        # phase1()
         character_funct()
         move_backround()
         screen.update()

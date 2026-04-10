@@ -94,6 +94,7 @@ def phase1():
             Game_story['MacGuffin'] = 'Bob'
         if Game_story['MacGuffin'] == 'none':
             print('starting Scene 4')
+            phase1_entitys[1].conversant = False
             phase1_entitys[1].actor.hideturtle()
             phase1_entitys[2].actor.hideturtle()
             phase1_entitys[1].actor.goto(1000,1000)
@@ -106,47 +107,53 @@ def phase1():
         if props[0].actor.isvisible() == False:
             Game_story['MacGuffin'] = 'Computer'
             props[0].actor.showturtle()
+            props[0].actor.showturtle()
+            props[0].actor.showturtle()
             props[0].has_text = True
-            props[0].actor.goto(380,80)
+            props[0].actor.goto(380 + x, 80 + y)
+            props[0].conversant = True
         if Game_story['MacGuffin'] == 'none':
             phase1_entitys[0].actor.goto(0,300)
-            map_settings['backround']['lock_map'] = True
+            props[0].conversant = False
+            map_settings['lock_map'] = True
             Game_story['Act1']['phase1']['Scene4'] = 'complete'
-    # elif Game_story['Act1']['phase1']['Scene5'] == 'inactive':
-    #     if Game_settings['General_timer'] == -1:
-    #         Game_settings['General_timer'] = 20
-    #         GT_1_1.shape('circle')
-    #         GT_1_2.shape('circle')
-    #         GT_1_1.color('red')
-    #         GT_1_2.color('yellow')
-    #         GT_2_1.shape("Cover(1).gif")
-    #         GT_2_2.shape("Cover(1).gif")
-    #         GT_2_1.goto(0, 200)
-    #         GT_2_2.goto(0,-400)
-    #         GT_1_1.goto(0,400)
-    #         GT_1_2.goto(0,-10)
-    #         GT_1_1.shapesize(stretch_wid=5, stretch_len=10) # Temp line
-    #         GT_1_2.shapesize(stretch_wid=2, stretch_len=10) # Temp line
-    #         player_1.goto(0, 400)
-    #         for turtle in [player_1, GT_1_1, GT_1_2, GT_2_1, GT_2_2] : turtle.showturtle()
-    #     if Game_settings['General_timer'] > 0:
-    #         for backdrop in [GT_2_1, GT_2_2]:
-    #             if backdrop.ycor() <= 500:
-    #                 backdrop.sety(backdrop.ycor()+40)
-    #             else :
-    #                 backdrop.sety(-500)
-    #                 Game_settings['General_timer'] -= 1
-    #                 print(Game_settings['General_timer'])
-    #         if player_1.ycor() >= 0:
-    #             player_1.sety(player_1.ycor()-5)
-    #         else:
-    #             GT_1_1.sety(GT_1_1.ycor()+2)
-    #     elif (player_1.ycor() >= -300):
-    #         player_1.showturtle()
-    #         player_1.sety(player_1.ycor()-5)
-    #         GT_2_1.hideturtle()
-    #         GT_2_2.hideturtle()
-    #         GT_1_2.sety(GT_1_2.ycor()-5)
-    #     else:
-    #         Game_story['Act1']['phase1']['Scene5'] = 'pending'
+    elif Game_story['Act1']['phase1']['Scene5'] == 'inactive':
+        if Game_story['transition_timer'] == -1:
+            Game_story['transition_timer'] = 20
+            props[0].actor.shape('circle')
+            props[1].actor.shape('circle')
+            props[0].actor.color('red')
+            props[1].actor.color('yellow')
+            props[2].actor.shape("Cover(1).gif")
+            props[3].actor.shape("Cover(1).gif")
+            props[2].actor.goto(0, 200)
+            props[3].actor.goto(0,-400)
+            props[0].actor.goto(0,400)
+            props[1].actor.goto(0,-10)
+            props[0].actor.shapesize(stretch_wid=5, stretch_len=10) # Temp line
+            props[1].actor.shapesize(stretch_wid=2, stretch_len=10) # Temp line
+            props[0].actor.goto(0, 400)
+            for turtle in [props[0].actor, props[1].actor, props[2].actor, props[3].actor] : turtle.showturtle()
+        if Game_story['transition_timer'] > 0:
+            for backdrop in [props[2].actor, props[3].actor]:
+                if backdrop.ycor() <= 500:
+                    backdrop.sety(backdrop.ycor()+40)
+                else :
+                    backdrop.sety(-500)
+                    Game_story['transition_timer'] -= 1
+                    print(Game_story['transition_timer'])
+            if entity.active_player.actor.ycor() >= 0:
+                entity.active_player.actor.sety(entity.active_player.actor.ycor()-5)
+            else:
+                props[0].actor.sety(props[0].actor.ycor()+2)
+        elif (entity.active_player.actor.ycor() >= -300):
+            entity.active_player.actor.sety(entity.active_player.actor.ycor()-5)
+            # props[1].actor.hideturtle()
+            # props[2].actor.hideturtle()
+            # props[3].actor.hideturtle()
+            props[1].actor.sety(props[1].actor.ycor()-5)
+        else:
+            Game_story['transition_timer'] = -1
+            props[1].actor.hideturtle()
+            Game_story['Act1']['phase1']['Scene5'] = 'pending'
       
