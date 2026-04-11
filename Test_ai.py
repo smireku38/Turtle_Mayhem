@@ -10,6 +10,7 @@ def character_funct():
 def move_game():
     if Turtle_Game.Game_story['pause_Game'] == False:
         # phase1()
+        Turtle_Game.set_map_speed()
         character_funct()
         move_backround()
         screen.update()

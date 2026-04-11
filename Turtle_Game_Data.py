@@ -34,6 +34,11 @@ class Turtle_Game:
                         'Phase3':{
                                 'Scene1':'inactive', 'Scene2':'inactive', 'Scene3':'inactive','Scene4':'inactive','Scene5':'inactive',}}
             }
+    def set_map_speed():
+        # 1. Define the master speed
+        speed = Turtle_Game.map_settings['speed']
+        for key in ['UPS', 'DPS', 'LPS', 'RPS']:
+            Turtle_Game.map_settings[key] = speed
     def move_objects(direction):
         all_entitys = entity.all_entity_objects
         for enti in all_entitys:
@@ -155,6 +160,7 @@ class Charcter(Turtle_Game, entity):
         if not Charcter.map_settings['lock_map']:
             Charcter.active_player.activate_player_ani()
             Generate_Maze.wall_collsions(Charcter.active_player)
+            Generate_Maze.maintain_z_order(Charcter.active_player)
             # Charcter.active_player.hit_box()
         # for enti in Charcter.charcters_objects:
         #     if enti != Charcter.active_player or Turtle_Game.map_settings['lock_map']:
@@ -322,6 +328,7 @@ class Generate_Maze:
                 max_dist = node.nodes_from_start
                 furthest_node = node
         self.end_location = furthest_node
+
     def carve_maze(self):
         currNode = self.start_location
         self.start_location.nodes_from_start = 0
@@ -362,35 +369,47 @@ class Generate_Maze:
         Closest_Node = Generate_Maze.current_maze.Nodes_dict.get((snap_x, snap_y))
         
         return Closest_Node
+
     def wall_collsions(enti):
-        if enti == Charcter.active_player and 0 in [enti.up, enti.down, enti.left, enti.right]:
-            speed = Turtle_Game.map_settings['speed']
-            for PS in ['UPS', 'DPS', 'LPS', 'RPS']:
-                if Turtle_Game.map_settings[PS] == 0: Turtle_Game.map_settings[PS] = speed
         
         Closest_Node =  Generate_Maze.get_closest_node(enti)
-        
-        if (Closest_Node == None): return
-        enti_direction = enti.direction
-        Vertical_buffer = 50
-        if (enti_direction == 'up'):
-            up_walls = [Closest_Node.up_wall.wall_turtle, Closest_Node.up_wall.left_wall.wall_turtle, Closest_Node.up_wall.right_wall.wall_turtle]
-            # Check if Sam is in the X-lane AND between (Wall Bottom) and (Wall Center)
-            for wall_obj in up_walls:
-                if wall_obj.ycor() - Vertical_buffer <= enti.actor.ycor() <= wall_obj.ycor() and \
-                wall_obj.xcor() - 60 <= enti.actor.xcor() <= wall_obj.xcor() + 60:
-                    Turtle_Game.map_settings['UPS'] = 0
-        if (enti_direction == 'up'):
-            down_walls = [Closest_Node.down_wall.wall_turtle, Closest_Node.down_wall.left_wall.wall_turtle, Closest_Node.down_wall.right_wall.wall_turtle]
-            
-            for wall_obj in down_walls:
-                if wall_obj.ycor() <= enti.actor.ycor() <= wall_obj.ycor() + Vertical_buffer and \
-                wall_obj.wall_turtle.xcor() - 60 <= enti.actor.xcor() <= wall_obj.wall_turtle.xcor() + 60:
-                    Turtle_Game.map_settings['DPS'] = 0
-
-
-        
-
+        V_BUF = 55
+        H_BUF = 70
+        VW_BUF = 60
+        HW_BUF = 50
+        conditions = {
+            'up': {
+                'walls': [Closest_Node.up_wall, Closest_Node.top_left_wall, Closest_Node.top_right_wall],
+                'check': lambda w: (w.ycor() - V_BUF <= enti.actor.ycor() <= w.ycor()) and \
+                                (w.xcor() - VW_BUF <= enti.actor.xcor() <= w.xcor() + VW_BUF)
+            },
+            'down': {
+                'walls': [Closest_Node.down_wall, Closest_Node.lower_left_wall, Closest_Node.lower_right_wall],
+                'check': lambda w: (w.ycor() <= enti.actor.ycor() <= w.ycor() + V_BUF) and \
+                                (w.xcor() - VW_BUF <= enti.actor.xcor() <= w.xcor() + VW_BUF)
+            },
+            'right': {
+                'walls': [Closest_Node.right_wall, Closest_Node.top_right_wall, Closest_Node.lower_right_wall],
+                'check': lambda w: (w.xcor() - H_BUF <= enti.actor.xcor() <= w.xcor()) and \
+                                (w.ycor() - HW_BUF <= enti.actor.ycor() <= w.ycor() + HW_BUF)
+            },
+            'left': {
+                'walls': [Closest_Node.left_wall, Closest_Node.top_left_wall, Closest_Node.lower_left_wall],
+                'check': lambda w: (w.xcor() <= enti.actor.xcor() <= w.xcor() + H_BUF) and \
+                                (w.ycor() - HW_BUF <= enti.actor.ycor() <= w.ycor() + HW_BUF)
+            }
+        }
+        data = conditions.get(enti.direction)
+        if data:
+            for wall_obj in data['walls']:
+                if wall_obj and wall_obj.active:
+                    # 'data['check']' is the lambda function. 
+                    # We pass 'wall_obj.wall_turtle' as 'w'
+                    if data['check'](wall_obj.wall_turtle):
+                        # Stop the movement for that direction
+                        setting_key = f"{enti.direction[0].upper()}PS" # Result: 'UPS', 'DPS', etc.
+                        Turtle_Game.map_settings[setting_key] = 0
+                        break
 
     def maintain_z_order(enti):
         Closest_Node =  Generate_Maze.get_closest_node(enti)
@@ -427,14 +446,6 @@ class Generate_Maze:
         lower_left_wall = Closest_Node.lower_left_wall
         if (lower_left_wall != None and enti_index > stack.index(lower_left_wall.wall_turtle.turtle._item)):
             Canvas.tag_raise(lower_left_wall.wall_turtle.turtle._item, enti_data)
-        
-
-
-
-        
-
-
-        
 
     def move_walls(self, back_x, back_y):
         # Only update walls that are on-screen or very close to the viewport.
