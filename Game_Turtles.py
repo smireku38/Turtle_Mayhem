@@ -1,9 +1,9 @@
 import turtle
-from Turtle_Game_Data import Charcter, static_entity, Generate_Maze
+from Turtle_Game_Data import Charcter, static_entity, Generate_boss_mazes, Generate_Maze
 
-Karel_maze_1 = Generate_Maze(3, 3, 'center') # max size of 15x15
+# Karel_maze_1 = Generate_boss_mazes(numMazes = 10, length = 3, width = 3, start = 'center') # max size of 15x15
+Karel_maze_1 = Generate_Maze(2, 2, 'top left')
 Generate_Maze.current_maze = Karel_maze_1
-
 # prop_1 = turtle.Turtle()
 # prop_2 = turtle.Turtle()
 # prop_3 = turtle.Turtle()

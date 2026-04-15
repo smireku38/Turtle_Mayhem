@@ -47,7 +47,8 @@ class Turtle_Game:
                 if direction == 'down' and Turtle_Game.map_settings['down'] == True: enti.actor.sety(enti.actor.ycor()+Turtle_Game.map_settings['DPS'])
                 if direction == 'left' and Turtle_Game.map_settings['left'] == True: enti.actor.setx(enti.actor.xcor()+Turtle_Game.map_settings['LPS'])
                 if direction == 'right' and Turtle_Game.map_settings['right'] == True: enti.actor.setx(enti.actor.xcor()-Turtle_Game.map_settings['RPS'])
-        Generate_Maze.current_maze.move_walls(backround.xcor(), backround.ycor())
+        if Generate_boss_mazes.current_maze != None: Generate_boss_mazes.current_maze.move_walls(backround.xcor(), backround.ycor())
+        health_system.track_player()
 
 class entity:
     all_entity_names = []
@@ -136,13 +137,66 @@ class entity:
                 else:self.Oscillate_ani=True
         elif self.move_timer != -4: self.move_timer = -4
 
-class Charcter(Turtle_Game, entity):
+class health_system:
+    bars = []
+    def __init__(self, type = "player", health = 100):
+        self.current_health = health
+        self.max_health = health
+        self.current_shift = 0
+        self.damege_bar = turtle.Turtle()
+        self.health_bar = turtle.Turtle()
+        self.damege_bar.penup()
+        self.health_bar.penup()
+        self.damege_bar.shape('square')
+        self.health_bar.shape('square')
+        self.damege_bar.color('black', 'red')
+        self.health_bar.color('black', 'green')
+        self.base_width = 1
+        self.base_length = 1
+        if type == 'player': self.base_length, self.base_width = 0.5, 4
+        self.damege_bar.turtlesize(self.base_length, self.base_width)
+        self.health_bar.turtlesize(self.base_length, self.base_width)
+        health_system.bars.append(self)
+    def track_player():
+        for player in health_system.bars:
+            player.damege_bar.goto(player.actor.xcor(), player.actor.ycor()+30)
+            player.health_bar.goto(player.actor.xcor() - player.current_shift, player.actor.ycor()+30)
+            stack = Canvas.find_all()
+            if stack.index(player.health_bar.turtle._item) != stack.index(player.actor.turtle._item)-1:
+                Canvas.tag_lower(player.health_bar.turtle._item, player.actor.turtle._item)
+                Canvas.tag_lower(player.health_bar.turtle._item, player.actor.turtle._item)
+
+    def damege_calc(self, damage):
+        self.current_health -= damage
+        if self.current_health < 0: self.current_health = 0
+        percent_remaining = self.current_health / self.max_health
+        new_width = percent_remaining * self.base_width
+        if self.current_health <= 0:
+            new_width = 0.01
+        self.current_shift = (self.base_width - new_width) * 10
+        
+        self.health_bar.turtlesize(0.5, new_width)
+        print(f'Current Health: {self.current_health}')
+    def restore_calc(self, restored):
+        self.current_health += restored
+        percent_remaining = self.current_health / self.max_health
+        if self.current_health <= 100:
+            new_width = percent_remaining * self.base_width
+        else:
+            new_width = 0.01
+        self.current_shift = (self.base_width - new_width) * 10
+        
+        self.health_bar.turtlesize(0.5, new_width)
+        print(f'Current Health: {self.current_health}')
+
+class Charcter(Turtle_Game, entity, health_system):
     charcters = [] # stores the names of all charcters
     charcters_objects = [] # stores the turtle all charcters
     active_player = 'None'
     Int_Direction = ['down', 'up', 'right', 'left']
     def __init__(self, name = "None", sprite = "None"):
-        super().__init__(name, shape=sprite + '_FR.gif')
+        entity.__init__(self, name, shape=sprite + '_FR.gif')
+        health_system.__init__(self, 'player', 200)
         Charcter.charcters.append(name)
         Charcter.charcters_objects.append(self)
         
@@ -159,8 +213,10 @@ class Charcter(Turtle_Game, entity):
     def activate_chacters():
         if not Charcter.map_settings['lock_map']:
             Charcter.active_player.activate_player_ani()
-            Generate_Maze.wall_collsions(Charcter.active_player)
-            Generate_Maze.maintain_z_order(Charcter.active_player)
+            # print(Generate_Maze.current_maze)
+            # if (Generate_Maze.current_maze != None):
+            #     Generate_Maze.wall_collsions(Charcter.active_player)
+            #     Generate_Maze.maintain_z_order(Charcter.active_player)
             # Charcter.active_player.hit_box()
         # for enti in Charcter.charcters_objects:
         #     if enti != Charcter.active_player or Turtle_Game.map_settings['lock_map']:
@@ -249,8 +305,9 @@ class static_entity(Turtle_Game, entity):
         static_antimation = {}
 
 class Generate_Maze:
-    current_maze = 'none'
-
+    current_maze = None
+    start_marker = None
+    end_marker = None
     def __init__(self, length, width, start_location = -1, size_of_start = 1):
 
         self.wall_dict = {}
@@ -260,18 +317,18 @@ class Generate_Maze:
         self.width = width
         self.maze_size = length * width
         self.start_location =start_location
-        
-        # self.start_marker = turtle.Turtle()
-        # self.start_marker.penup()
-        # self.start_marker.shape('circle')
-        # self.start_marker.shapesize(5, 5)
-        # self.start_marker.color('red')
+        self.cords = None
+        self.num_walls = 0
+        if Generate_Maze.start_marker == None:
+            Generate_Maze.start_marker = turtle.Turtle()
+            Generate_Maze.start_marker.penup()
+            Generate_Maze.start_marker.shape('circle')
+            Generate_Maze.start_marker.color('red')
 
-        # self.end_marker = turtle.Turtle()
-        # self.end_marker.shape('circle')
-        # self.end_marker.color('green')
-        # self.end_marker.shapesize(5, 5)
-        # self.end_marker.penup()
+            Generate_Maze.end_marker = turtle.Turtle()
+            Generate_Maze.end_marker.shape('circle')
+            Generate_Maze.end_marker.color('green')
+            Generate_Maze.end_marker.penup()
 
         self.end_location = None
 
@@ -289,10 +346,11 @@ class Generate_Maze:
             V_start = self.acutal_length 
             for j in range((length*2)+1):
                 if (i%2 == 0 or j%2 == 0):
-                    newWall = self.wall_section(H_start, V_start)
+                    newWall = wall_section(H_start, V_start, self.num_walls)
+                    self.num_walls += 1
                     self.wall_dict[(H_start, V_start)] = newWall
                 else:
-                    newNode = self.Node_section(H_start, V_start)
+                    newNode = Node_section(H_start, V_start)
                     self.Nodes_dict[(H_start, V_start)] = newNode
                 V_start -= 100
             H_start += 100
@@ -302,9 +360,9 @@ class Generate_Maze:
         self.set_start()
         self.carve_maze()
         self.set_end()
-        self.set_start()
 
     def set_start(self):
+        # if 
         x, y = self.actual_wdith, self.acutal_length
         if (self.start_location == 'center'):
             self.start_location = self.Nodes_dict.get((0,0))
@@ -313,12 +371,15 @@ class Generate_Maze:
         elif (self.start_location == 'bottem right'):
             self.start_location = self.Nodes_dict.get((x,-y))
         elif (self.start_location == 'top left'):
-            self.start_location = self.Nodes_dict.get((-x,y))
+            x, y = self.actual_wdith + 100, self.acutal_length - 100
+            print(x, y)
+            self.start_location = self.Nodes_dict.get((x,y))
         elif (self.start_location == 'bottem left'):
             self.start_location = self.Nodes_dict.get((-x,-y))
         else:
             self.start_location = self.Nodes_dict[random.choice(list(self.Nodes_dict))]
-        self.node_type = "start"
+        self.type = "start"
+        Generate_Maze.start_marker.goto(self.start_location.xcor, self.start_location.ycor)
 
     def set_end(self):
         max_dist = -1
@@ -328,6 +389,7 @@ class Generate_Maze:
                 max_dist = node.nodes_from_start
                 furthest_node = node
         self.end_location = furthest_node
+        Generate_Maze.end_marker.goto(self.end_location.xcor, self.end_location.ycor)
 
     def carve_maze(self):
         currNode = self.start_location
@@ -371,7 +433,6 @@ class Generate_Maze:
         return Closest_Node
 
     def wall_collsions(enti):
-        
         Closest_Node =  Generate_Maze.get_closest_node(enti)
         V_BUF = 55
         H_BUF = 70
@@ -454,8 +515,8 @@ class Generate_Maze:
         max_y = 900 / 2 + 40  # Screen height / 2 + buffer
         min_y = -max_y
         
-        # self.start_marker.goto(self.start_location.xcor + back_x, self.start_location.ycor + back_y)
-        # self.end_marker.goto(self.end_location.xcor + back_x, self.end_location.ycor + back_y)
+        Generate_Maze.start_marker.goto(self.start_location.xcor + back_x, self.start_location.ycor + back_y)
+        Generate_Maze.end_marker.goto(self.end_location.xcor + back_x, self.end_location.ycor + back_y)
 
         for wall in self.wall_dict.values():
             if not wall.active:
@@ -488,7 +549,6 @@ class Generate_Maze:
             node.top_left_wall = self.wall_dict.get((x - 100, y + 100))
             node.lower_right_wall = self.wall_dict.get((x + 100, y - 100))
             node.lower_left_wall = self.wall_dict.get((x - 100, y - 100))
-        print(f"All {len(self.Nodes_dict)} nodes Linked")
 
     def link_walls(self):
         for (x, y), wall in self.wall_dict.items():
@@ -496,138 +556,167 @@ class Generate_Maze:
             wall.right_wall = self.wall_dict.get((x + 100, y))
             wall.up_wall = self.wall_dict.get((x, y + 100))
             wall.down_wall = self.wall_dict.get((x, y - 100))
-        print(f"All {len(self.wall_dict)} walls Linked")
 
-    class Node_section:
-        floor_tiles = []
-        def __init__(self, x, y):
-            self.left_wall = None
-            self.right_wall = None
-            self.up_wall = None
-            self.down_wall = None
-            self.xcor = x
-            self.ycor = y
-            self.left_node = None
-            self.right_node = None
-            self.up_node = None
-            self.down_node = None
+    def shift_map():
+        x, y = Generate_Maze.start_marker.xcor(), Generate_Maze.end_marker.ycor()
+        print(x,y)
+        backround.goto(backround.xcor() - x, backround.ycor() - y)
+        Generate_Maze.start_marker.goto(Generate_Maze.start_marker.xcor() - x, Generate_Maze.start_marker.ycor() - y)
+        Generate_Maze.end_marker.goto(Generate_Maze.end_marker.xcor() - x, Generate_Maze.end_marker.ycor() - y)
+        for wall in Generate_Maze.current_maze.wall_dict.values():
+            # Subtract start location to center maze at 0,0
+            wall_turtle = wall.wall_turtle
+            wall_turtle.goto(wall_turtle.xcor() + backround.xcor(), wall_turtle.ycor() + backround.ycor())
 
-            self.top_right_wall = None
-            self.top_left_wall = None
-            self.lower_right_wall = None
-            self.lower_left_wall = None
+class Node_section:
+    floor_tiles = []
+    def __init__(self, x, y):
+        self.left_wall = None
+        self.right_wall = None
+        self.up_wall = None
+        self.down_wall = None
+        self.xcor = x
+        self.ycor = y
+        self.left_node = None
+        self.right_node = None
+        self.up_node = None
+        self.down_node = None
 
-            self.nodes_from_start = 0
+        self.top_right_wall = None
+        self.top_left_wall = None
+        self.lower_right_wall = None
+        self.lower_left_wall = None
+
+        self.nodes_from_start = 0
+        print(f"Node created atn {x, y}")
         
-    class wall_section:
-        wall_dict = {}
-        def __init__(self, x, y):
-            self.wall_turtle = turtle.Turtle()      
-            self.wall_turtle.shape('tempWall (1).gif')
-            self.wall_turtle.penup()
-            self.wall_turtle.goto(x, y)
-            self.setlocation = (x, y)
-            print(f"Wall created at {x}, {y}")
+class wall_section:
+    wall_dict = {}
+    walls = []
+    total_Walls = 0
+    def __init__(self, x, y, num_Walls):
+        if num_Walls < wall_section.total_Walls:
+            self.wall_turtle = wall_section.walls[num_Walls]
+        else:
+            self.wall_turtle = turtle.Turtle()
+            # self.wall_turtle.hideturtle()
+            wall_section.walls.append(self.wall_turtle)
+            wall_section.total_Walls += 1
+            # print(f"Wall created at {x}, {y}")
+        self.wall_turtle.shape('tempWall (1).gif')
+        self.wall_turtle.penup()
+        self.wall_turtle.goto(x, y)
+        self.setlocation = (x, y)
 
-            Generate_Maze.wall_section.wall_dict[(x, y)] = self
-            
-            self.active = True
-            self.node_type = None
-
-            self.left_wall = None
-            self.right_wall = None
-            self.up_wall = None
-            self.down_wall = None
-
-        def maintain_z_order(self, enti):
-            if enti.direction == 'up':
-                Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-                Canvas.tag_lower(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-            if enti.direction == 'down':
-                Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-                Canvas.tag_raise(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-            if enti.direction == 'left':
-                Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-                Canvas.tag_raise(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-            if enti.direction == 'right':
-                Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-                Canvas.tag_raise(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
-
-
-
-
-
-            stack = Canvas.find_all()
-            curr_layer = stack.index(obj2.turtle._item)
-            other_layer = stack.index(self.wall_turtle.turtle._item)
-            if  curr_layer > other_layer and self.wall_turtle.ycor() > obj2.ycor():
-                Canvas.tag_raise(self.wall_turtle.turtle._item, obj2.turtle._item) 
-            elif curr_layer < other_layer and self.wall_turtle.ycor() <= obj2.ycor():
-                Canvas.tag_lower(self.wall_turtle.turtle._item, obj2.turtle._item)
-        # logic_x = (enti.actor.xcor() - backround.xcor())
-        # logic_y = (enti.actor.ycor() - backround.ycor())
-
-        # snap_x = round(logic_x / 100) * 100
-        # snap_y = round(logic_y / 100) * 100
-
-        # player_direction = Charcter.active_player.direction
-        # start = 0
-        # end = 0
-        # increment = 0
-
-        # Closest_Wall = Generate_Maze.wall_section.wall_dict.get((snap_x, snap_y))
+        wall_section.wall_dict[(x, y)] = self
         
-        # if Closest_Wall == None:
-        #     if player_direction == 'up':
-        #         Closest_Wall = Generate_Maze.wall_section.wall_dict.get((snap_x, snap_y + 100))
-        #     elif player_direction == 'down':
-        #         Closest_Wall = Generate_Maze.wall_section.wall_dict.get((snap_x, snap_y - 100))
-        #     elif player_direction == 'left':
-        #         Closest_Wall = Generate_Maze.wall_section.wall_dict.get((snap_x - 100, snap_y))
-        #     elif player_direction == 'right':
-        #         Closest_Wall = Generate_Maze.wall_section.wall_dict.get((snap_x + 100, snap_y))
+        self.active = True
+        self.lock = False
+        self.type = None
 
-        # if Closest_Wall == None:
-        #     return
-        # Closest_Wall.maintain_z_order(enti.actor)
-        # if Closest_Wall.active:
-        #             # Buffer: how many pixels 'thick' the collision zone is
-        #             Vertical_buffer = 50
-        #             Horizontal_buffer = 70
+        self.left_wall = None
+        self.right_wall = None
+        self.up_wall = None
+        self.down_wall = None
 
-        #             if player_direction == 'up':
-        #                 # Check if Sam is in the X-lane AND between (Wall Bottom) and (Wall Center)
-        #                 if Closest_Wall.wall_turtle.ycor() - Vertical_buffer <= enti.actor.ycor() <= Closest_Wall.wall_turtle.ycor() and \
-        #                 Closest_Wall.wall_turtle.xcor() - 60 <= enti.actor.xcor() <= Closest_Wall.wall_turtle.xcor() + 60:
-        #                     Turtle_Game.map_settings['UPS'] = 0
+    def maintain_z_order(self, enti):
+        if enti.direction == 'up':
+            Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
+            Canvas.tag_lower(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
+        if enti.direction == 'down':
+            Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
+            Canvas.tag_raise(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
+        if enti.direction == 'left':
+            Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
+            Canvas.tag_raise(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
+        if enti.direction == 'right':
+            Canvas.tag_raise(self.up_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
+            Canvas.tag_raise(self.down_wall.wall_turtle.turtle._item, enti.actor.turtle._item)
 
-        #                 else:
-        #                     Turtle_Game.map_settings['UPS'] = speed
+class Generate_boss_mazes:
+    all_mazes = []
+    all_boss_mazes = []
+    current_boss_mazes = None
+    current_maze = None
 
-        #             elif player_direction == 'down':
-        #                 # Check if Sam is between (Wall Center) and (Wall Top)
-        #                 if Closest_Wall.wall_turtle.ycor() <= enti.actor.ycor() <= Closest_Wall.wall_turtle.ycor() + Vertical_buffer and \
-        #                 Closest_Wall.wall_turtle.xcor() - 60 <= enti.actor.xcor() <= Closest_Wall.wall_turtle.xcor() + 60:
-        #                     Turtle_Game.map_settings['DPS'] = 0
-        #                 else:
-        #                     Turtle_Game.map_settings['DPS'] = speed
+    def __init__(self, numMazes=1, length=3, width=3, start=-1, sprite_sheet='Karel_wall'):
+        self.current_maze = None
+        self.mazes = []
+        for i in range(numMazes):
+            maze = Generate_Maze(length, width)
+            self.mazes.append(maze)
+            Generate_boss_mazes.all_mazes.append(maze)
+        
+        # Add this specific boss set instance to the master list
+        Generate_boss_mazes.all_boss_mazes.append(self)
+    @classmethod
+    def reset_maze(cls):
+        # Loop 1: The "View" (The physical Turtles)
+        # Goal: Make sure only the walls for the current maze are visible
+        for wall in wall_section.walls:
+            if wall in cls.current_maze.wall_dict:
+                wall.showturtle()
+            else:
+                wall.hideturtle()
 
-        #             elif player_direction == 'left':
-        #                 # Check if Sam is between (Wall Center) and (Wall Right Edge)
-        #                 if Closest_Wall.wall_turtle.xcor() <= enti.actor.xcor() <= Closest_Wall.wall_turtle.xcor() + Horizontal_buffer and \
-        #                 Closest_Wall.wall_turtle.ycor() - 60 <= enti.actor.ycor() <= Closest_Wall.wall_turtle.ycor() + 60:
-        #                     Turtle_Game.map_settings['LPS'] = 0
-        #                 else:
-        #                     Turtle_Game.map_settings['LPS'] = speed
+        # Loop 2: The "Model" (The Information Nodes)
+        # Goal: Disable the logic/collisions for walls that aren't here
+        for wallNode in wall_section.wall_dict:
+            if wallNode not in cls.current_maze.wall_dict:
+                # If the information node isn't in our current maze, lock it
+                # wall_section.wall_dict[wallNode] likely gets the actual object
+                wall_section.wall_dict[wallNode].lock = True
+            else:
+                # If it IS in our maze, make sure it's unlocked
+                wall_section.wall_dict[wallNode].lock = False
+        Generate_Maze.shift_map()
 
-        #             elif player_direction == 'right':
-        #                 # Check if Sam is between (Wall Left Edge) and (Wall Center)
-        #                 if Closest_Wall.wall_turtle.xcor() - Horizontal_buffer <= enti.actor.xcor() <= Closest_Wall.wall_turtle.xcor() and \
-        #                 Closest_Wall.wall_turtle.ycor() - 60 <= enti.actor.ycor() <= Closest_Wall.wall_turtle.ycor() + 60:
-        #                     Turtle_Game.map_settings['RPS'] = 0
-        #                 else:
-        #                     Turtle_Game.map_settings['RPS'] = speed
-        # else:
-        #     # If the wall is NOT active, ensure Sam can move freely
-        #     Turtle_Game.map_settings['UPS'], Turtle_Game.map_settings['DPS'] = speed, speed
-        #     Turtle_Game.map_settings['LPS'], Turtle_Game.map_settings['RPS'] = speed, speed
+    @classmethod
+    def load_next_maze(cls):
+        # 1. Handle Game Start
+        if cls.current_boss_mazes is None:
+            if not cls.all_boss_mazes:
+                print("No boss mazes exist to load!")
+                return
+            cls.current_boss_mazes = cls.all_boss_mazes[0]
+            # Set BOTH the instance-level and class-level pointers
+            cls.current_boss_mazes.current_maze = cls.current_boss_mazes.mazes[0]
+            cls.current_maze = cls.current_boss_mazes.current_maze
+            Generate_Maze.current_maze = cls.current_maze
+
+        else:
+            # 2. Check current progress
+            current_set = cls.current_boss_mazes
+            try:
+                index = current_set.mazes.index(current_set.current_maze)
+            except ValueError:
+                index = -1
+
+            # 3. Move to next maze in set
+            if index + 1 < len(current_set.mazes):
+                current_set.current_maze = current_set.mazes[index + 1]
+                # Update the Class-level master pointer
+                cls.current_maze = current_set.current_maze
+                Generate_Maze.current_maze = current_set.current_maze
+                print(f"Moving to Maze {index + 2}...")
+                
+            else:
+                # 4. Switch to next Boss Set
+                boss_index = cls.all_boss_mazes.index(current_set)
+                
+                if boss_index + 1 < len(cls.all_boss_mazes):
+                    cls.current_boss_mazes = cls.all_boss_mazes[boss_index + 1]
+                    # Reset pointers for the new set
+                    cls.current_boss_mazes.current_maze = cls.current_boss_mazes.mazes[0]
+                    cls.current_maze = cls.current_boss_mazes.current_maze
+                    Generate_Maze.current_maze = current_set.current_maze
+                    print(f"Moving to Boss Set {boss_index + 2}.")
+                else:
+                    print("Victory! All boss sets cleared.")
+                    # cls.current_maze = None # Game is over
+        cls.reset_maze()
+
+
+        
+        
+        
